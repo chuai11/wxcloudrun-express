@@ -1,61 +1,51 @@
-const path = require("path");
-const express = require("express");
-const cors = require("cors");
-const morgan = require("morgan");
-const { init: initDB, Counter } = require("./db");
+const express = require('express')
+const config = require('./config')
+const { initDb } = require('./db/init')
+const routes = require('./routes')
 
-const logger = morgan("tiny");
+const app = express()
 
-const app = express();
-app.use(express.urlencoded({ extended: false }));
-app.use(express.json());
-app.use(cors());
-app.use(logger);
+app.use(express.json({ limit: '2mb' }))
+app.use(express.urlencoded({ extended: true }))
 
-// 首页
-app.get("/", async (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
-});
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*')
+  res.header('Access-Control-Allow-Headers', 'Content-Type, X-WX-SERVICE, X-WX-OPENID')
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
+  if (req.method === 'OPTIONS') return res.sendStatus(204)
+  next()
+})
 
-// 更新计数
-app.post("/api/count", async (req, res) => {
-  const { action } = req.body;
-  if (action === "inc") {
-    await Counter.create();
-  } else if (action === "clear") {
-    await Counter.destroy({
-      truncate: true,
-    });
+app.get('/health', (req, res) => res.json({ code: 0, data: 'ok' }))
+
+// 打开公网域名根路径即可确认新代码是否生效
+app.get('/', (req, res) =>
+  res.json({ code: 0, data: { service: 'qzyn-server', status: 'ok' } })
+)
+
+app.use(routes)
+
+app.use((req, res) => res.status(404).json({ code: 404, msg: '接口不存在' }))
+
+app.use((err, req, res, next) => {
+  console.error('[error]', req.method, req.originalUrl, err)
+  const code = err.code || 500
+  res.status(code === 401 ? 401 : 200).json({ code, msg: err.message || '服务异常' })
+})
+
+async function start() {
+  console.log(
+    `[env] MYSQL_ADDRESS=${process.env.MYSQL_ADDRESS ? '已注入' : '缺失'}，数据库=${config.mysql.database}`
+  )
+  try {
+    await initDb()
+  } catch (err) {
+    console.error('[start] 数据库初始化失败，请检查 MySQL 环境变量：', err)
+    process.exit(1)
   }
-  res.send({
-    code: 0,
-    data: await Counter.count(),
-  });
-});
-
-// 获取计数
-app.get("/api/count", async (req, res) => {
-  const result = await Counter.count();
-  res.send({
-    code: 0,
-    data: result,
-  });
-});
-
-// 小程序调用，获取微信 Open ID
-app.get("/api/wx_openid", async (req, res) => {
-  if (req.headers["x-wx-source"]) {
-    res.send(req.headers["x-wx-openid"]);
-  }
-});
-
-const port = process.env.PORT || 80;
-
-async function bootstrap() {
-  await initDB();
-  app.listen(port, () => {
-    console.log("启动成功", port);
-  });
+  app.listen(config.port, () => {
+    console.log(`[start] 秦珍益农服务已启动，端口 ${config.port}`)
+  })
 }
 
-bootstrap();
+start()

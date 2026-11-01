@@ -1,0 +1,142 @@
+// 所有建表语句都在服务启动时自动执行，重复执行不会报错
+module.exports = [
+  `CREATE TABLE IF NOT EXISTS users (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    openid VARCHAR(64) NOT NULL,
+    nick_name VARCHAR(64) NOT NULL DEFAULT '',
+    avatar_url VARCHAR(512) NOT NULL DEFAULT '',
+    phone VARCHAR(32) NOT NULL DEFAULT '',
+    gender VARCHAR(16) NOT NULL DEFAULT '',
+    birthday VARCHAR(16) NOT NULL DEFAULT '',
+    signature VARCHAR(255) NOT NULL DEFAULT '',
+    role VARCHAR(16) NOT NULL DEFAULT 'user',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_openid (openid)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+  `CREATE TABLE IF NOT EXISTS admins (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    openid VARCHAR(64) NOT NULL,
+    name VARCHAR(64) NOT NULL DEFAULT '管理员',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_openid (openid)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+  `CREATE TABLE IF NOT EXISTS products (
+    id VARCHAR(32) NOT NULL,
+    title VARCHAR(128) NOT NULL,
+    subtitle VARCHAR(255) NOT NULL DEFAULT '',
+    category VARCHAR(32) NOT NULL DEFAULT '',
+    price DECIMAL(10,2) NOT NULL DEFAULT 0,
+    origin_price DECIMAL(10,2) NOT NULL DEFAULT 0,
+    stock INT NOT NULL DEFAULT 0,
+    sales INT NOT NULL DEFAULT 0,
+    cover VARCHAR(512) NOT NULL DEFAULT '',
+    images JSON NULL,
+    tags JSON NULL,
+    specs JSON NULL,
+    params JSON NULL,
+    detail JSON NULL,
+    status VARCHAR(16) NOT NULL DEFAULT 'on',
+    sort INT NOT NULL DEFAULT 100,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_status_sort (status, sort),
+    KEY idx_category (category)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+  `CREATE TABLE IF NOT EXISTS addresses (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    openid VARCHAR(64) NOT NULL,
+    name VARCHAR(64) NOT NULL DEFAULT '',
+    phone VARCHAR(32) NOT NULL DEFAULT '',
+    region VARCHAR(128) NOT NULL DEFAULT '',
+    detail VARCHAR(255) NOT NULL DEFAULT '',
+    is_default TINYINT(1) NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_openid (openid)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+  `CREATE TABLE IF NOT EXISTS orders (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    order_no VARCHAR(40) NOT NULL,
+    openid VARCHAR(64) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending_pay',
+    goods_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+    freight DECIMAL(10,2) NOT NULL DEFAULT 0,
+    pay_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+    refund_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+    address_snapshot JSON NULL,
+    remark VARCHAR(255) NOT NULL DEFAULT '',
+    channel VARCHAR(20) NOT NULL DEFAULT 'miniprogram',
+    pay_channel VARCHAR(20) NOT NULL DEFAULT '',
+    pay_time DATETIME NULL,
+    ship_time DATETIME NULL,
+    finish_time DATETIME NULL,
+    cancel_time DATETIME NULL,
+    refund_time DATETIME NULL,
+    refund_reason VARCHAR(255) NOT NULL DEFAULT '',
+    shipping_company VARCHAR(64) NOT NULL DEFAULT '',
+    shipping_no VARCHAR(64) NOT NULL DEFAULT '',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_order_no (order_no),
+    KEY idx_openid_created (openid, created_at),
+    KEY idx_status_pay (status, pay_time)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+  `CREATE TABLE IF NOT EXISTS order_items (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    order_no VARCHAR(40) NOT NULL,
+    openid VARCHAR(64) NOT NULL DEFAULT '',
+    product_id VARCHAR(32) NOT NULL,
+    title VARCHAR(128) NOT NULL DEFAULT '',
+    cover VARCHAR(512) NOT NULL DEFAULT '',
+    spec VARCHAR(128) NOT NULL DEFAULT '',
+    price DECIMAL(10,2) NOT NULL DEFAULT 0,
+    qty INT NOT NULL DEFAULT 1,
+    amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_order_no (order_no),
+    KEY idx_product_id (product_id)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+  `CREATE TABLE IF NOT EXISTS payments (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    order_no VARCHAR(40) NOT NULL,
+    openid VARCHAR(64) NOT NULL DEFAULT '',
+    transaction_id VARCHAR(64) NOT NULL,
+    amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+    channel VARCHAR(20) NOT NULL DEFAULT 'mock',
+    type VARCHAR(16) NOT NULL DEFAULT 'pay',
+    result_code VARCHAR(16) NOT NULL DEFAULT 'SUCCESS',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_transaction (transaction_id),
+    KEY idx_order_no (order_no)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+  `CREATE TABLE IF NOT EXISTS reviews (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    openid VARCHAR(64) NOT NULL DEFAULT '',
+    product_id VARCHAR(32) NOT NULL,
+    order_no VARCHAR(40) NOT NULL DEFAULT '',
+    user_name VARCHAR(64) NOT NULL DEFAULT '',
+    avatar VARCHAR(64) NOT NULL DEFAULT '会',
+    star TINYINT NOT NULL DEFAULT 5,
+    spec VARCHAR(128) NOT NULL DEFAULT '',
+    content TEXT NULL,
+    images JSON NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_product_created (product_id, created_at)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+]

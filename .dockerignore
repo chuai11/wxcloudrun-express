@@ -1,6 +1,3 @@
-.git
-.dockerignore
-Dockerfile*
-container.config.json
-LICENSE
-README.md
+node_modules
+npm-debug.log
+.DS_Store
